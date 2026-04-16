@@ -1,0 +1,1793 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Autoprober Console</title>
+  <link rel="icon" href="data:,">
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080a09;
+      --chassis: #0b0e0d;
+      --module: #101412;
+      --module-high: #171d1a;
+      --well: #000000;
+      --text: #edf6f2;
+      --muted: #9caaa4;
+      --dim: #66746e;
+      --ghost: rgba(179, 202, 192, 0.16);
+      --ghost-strong: rgba(179, 202, 192, 0.28);
+      --cyan: #81ecff;
+      --cyan-hot: #00e3fd;
+      --cyan-ink: #002e35;
+      --amber: #feaa00;
+      --red: #ff7076;
+      --red-bg: #2a080c;
+      --green: #57f287;
+      --green-bg: #092315;
+    }
+
+    * { box-sizing: border-box; }
+    html { min-width: 320px; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+    button,
+    a.button,
+    input {
+      font: inherit;
+      letter-spacing: 0;
+    }
+    button,
+    a.button {
+      min-height: 42px;
+      border: 1px solid rgba(129, 236, 255, 0.46);
+      border-radius: 0;
+      background: var(--module-high);
+      color: var(--cyan);
+      padding: 0 14px;
+      font-weight: 800;
+      cursor: pointer;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-decoration: none;
+    }
+    button:hover,
+    a.button:hover {
+      background: rgba(0, 227, 253, 0.12);
+      border-color: var(--cyan);
+    }
+    button.primary {
+      background: var(--cyan-hot);
+      color: var(--cyan-ink);
+      border-color: var(--cyan-hot);
+    }
+    button.primary:hover { background: var(--cyan); }
+    button.danger {
+      color: var(--red);
+      border-color: rgba(255, 112, 118, 0.55);
+      background: var(--red-bg);
+    }
+    button.secondary,
+    a.button.secondary {
+      color: var(--cyan);
+      background: var(--well);
+      border-color: var(--ghost-strong);
+    }
+    button:disabled {
+      color: var(--dim);
+      border-color: var(--ghost);
+      background: rgba(0, 0, 0, 0.45);
+      cursor: not-allowed;
+    }
+    button:focus-visible,
+    input:focus-visible {
+      outline: 2px solid var(--cyan);
+      outline-offset: 2px;
+    }
+    input {
+      width: 100%;
+      min-height: 42px;
+      border: 0;
+      border-bottom: 2px solid var(--ghost-strong);
+      border-radius: 0;
+      background: var(--well);
+      color: var(--text);
+      padding: 0 10px;
+    }
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.45;
+    }
+    .mono {
+      font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+      font-variant-numeric: tabular-nums;
+    }
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      padding: 12px clamp(14px, 3vw, 34px);
+      background: var(--chassis);
+      border-bottom: 2px solid var(--module-high);
+    }
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 14px;
+      min-width: 0;
+    }
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1;
+      font-weight: 900;
+      color: var(--cyan-hot);
+      text-transform: uppercase;
+    }
+    .subtitle {
+      color: var(--muted);
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+    .top-state {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-height: 32px;
+      padding: 0 12px;
+      background: var(--well);
+      border: 1px solid var(--ghost);
+      color: var(--amber);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .top-state.good {
+      border-color: rgba(87, 242, 135, 0.45);
+      color: var(--green);
+      background: var(--green-bg);
+    }
+    .top-state.stop {
+      border-color: rgba(255, 112, 118, 0.58);
+      color: var(--red);
+      background: var(--red-bg);
+    }
+    .top-cluster {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .status-strip {
+      width: min(1540px, 100%);
+      margin: 0 auto;
+      padding: 12px clamp(12px, 2vw, 28px) 0;
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+    }
+    .status-cell {
+      min-width: 0;
+      background: var(--well);
+      border: 1px solid var(--ghost);
+      padding: 8px 10px;
+    }
+    .status-cell.good {
+      border-color: rgba(87, 242, 135, 0.45);
+      background: var(--green-bg);
+    }
+    .status-cell.good strong { color: var(--green); }
+    .status-cell.stop {
+      border-color: rgba(255, 112, 118, 0.58);
+      background: var(--red-bg);
+    }
+    .status-cell.stop strong { color: var(--red); }
+    .status-cell span {
+      display: block;
+      color: var(--dim);
+      font-size: 10px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+    .status-cell h2 {
+      color: var(--dim);
+      font-size: 10px;
+    }
+    .status-cell strong {
+      display: block;
+      margin-top: 4px;
+      color: var(--text);
+      font-size: 12px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .status-cell small {
+      display: block;
+      margin-top: 3px;
+      color: var(--dim);
+      font-size: 10px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .lamp {
+      width: 8px;
+      height: 8px;
+      background: var(--amber);
+      box-shadow: 0 0 14px rgba(254, 170, 0, 0.75);
+    }
+    .tab-row {
+      width: min(1540px, 100%);
+      margin: 0 auto;
+      padding: 10px clamp(12px, 2vw, 28px) 0;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .tab-row button {
+      min-height: 34px;
+      min-width: 112px;
+      background: var(--well);
+      border-color: var(--ghost-strong);
+      color: var(--muted);
+    }
+    .tab-row button.active {
+      background: var(--cyan-hot);
+      border-color: var(--cyan-hot);
+      color: var(--cyan-ink);
+    }
+    [data-tab-panel][hidden] {
+      display: none !important;
+    }
+    main {
+      width: min(1540px, 100%);
+      margin: 0 auto;
+      padding: 16px clamp(12px, 2vw, 28px) 36px;
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 14px;
+    }
+    section {
+      grid-column: span 12;
+      min-width: 0;
+      background: var(--module);
+      border: 1px solid var(--ghost);
+      border-radius: 0;
+      padding: 14px;
+      position: relative;
+      overflow: hidden;
+    }
+    section::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(to right, rgba(129, 236, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(129, 236, 255, 0.03) 1px, transparent 1px);
+      background-size: 20px 20px;
+      opacity: 0.55;
+    }
+    section > * {
+      position: relative;
+      z-index: 1;
+    }
+    .module-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    h2 {
+      margin: 0;
+      font-size: 13px;
+      line-height: 1.1;
+      font-weight: 900;
+      text-transform: uppercase;
+      color: var(--text);
+    }
+    .device-code {
+      color: var(--cyan);
+      font-size: 11px;
+      line-height: 1.2;
+      margin-top: 4px;
+    }
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 0 8px;
+      color: var(--amber);
+      border: 1px solid rgba(254, 170, 0, 0.28);
+      background: rgba(254, 170, 0, 0.08);
+      font-size: 11px;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+    .safety.status-cell {
+      grid-column: auto;
+      padding: 8px 10px;
+      background: var(--well);
+      align-self: start;
+      margin-top: 10px;
+    }
+    .safety.status-cell::before { display: none; }
+    .safety .safety-detail {
+      display: none;
+      margin-top: 4px;
+      color: var(--text);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+    .safety.stop {
+      border-color: rgba(255, 112, 118, 0.58);
+      background: var(--red-bg);
+    }
+    .safety.stop strong,
+    .safety.stop .safety-detail {
+      color: var(--red);
+    }
+    .stop-banner {
+      grid-column: span 12;
+      display: none;
+      padding: 10px 12px;
+      border: 1px solid rgba(255, 112, 118, 0.58);
+      background: var(--red-bg);
+      color: var(--red);
+      font-weight: 900;
+    }
+    .stop-banner.active { display: block; }
+    .kill-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+    .kill-actions button,
+    .kill-actions a.button { min-height: 32px; }
+    .workflow { grid-column: span 5; }
+    .microscope {
+      grid-column: span 7;
+      align-self: start;
+    }
+    .side-stack {
+      grid-column: span 12;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      overflow: visible;
+      align-self: start;
+    }
+    .side-stack::before { display: none; }
+    .side-stack section { grid-column: span 1; }
+    .control-row {
+      grid-column: span 12;
+      display: grid;
+      grid-template-columns: 5fr 7fr;
+      gap: 14px;
+    }
+    .control-row > section { grid-column: auto; }
+    .control-row::before { display: none; }
+    .log-panel { grid-column: span 5; }
+    .status {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      padding: 10px;
+      border: 1px solid rgba(87, 242, 135, 0.45);
+      background: var(--green-bg);
+      color: var(--green);
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+    @media (min-width: 1181px) {
+      .safety.status-cell { grid-row: auto; }
+    }
+    .status.stop {
+      background: var(--red-bg);
+      border-color: rgba(255, 112, 118, 0.58);
+      color: var(--red);
+    }
+    .telemetry {
+      display: grid;
+      gap: 1px;
+      background: rgba(179, 202, 192, 0.09);
+    }
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      min-height: 36px;
+      padding: 7px 10px;
+      background: rgba(0, 0, 0, 0.36);
+      color: var(--muted);
+      font-size: 13px;
+    }
+    .metric strong {
+      color: var(--text);
+      text-align: right;
+      overflow-wrap: anywhere;
+    }
+    .actions,
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .filter-row button {
+      min-height: 30px;
+      padding: 0 9px;
+      font-size: 11px;
+    }
+    .filter-row button.active {
+      background: var(--cyan-hot);
+      border-color: var(--cyan-hot);
+      color: var(--cyan-ink);
+    }
+    .workflow .actions button { flex: 1 1 42%; }
+    .viewport {
+      height: min(40vh, 420px);
+      min-height: 300px;
+      background: var(--well);
+      border: 1px solid var(--ghost-strong);
+      position: relative;
+      overflow: hidden;
+    }
+    .stream {
+      width: 100%;
+      height: 100%;
+      min-height: 300px;
+      object-fit: contain;
+      display: block;
+      background: var(--well);
+    }
+    .stream:not([src]) { display: none; }
+    #stream-placeholder {
+      height: 100%;
+      min-height: 300px;
+      justify-content: center;
+    }
+    .viewport::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background:
+        linear-gradient(to bottom, rgba(129, 236, 255, 0) 0, rgba(129, 236, 255, 0.05) 50%, rgba(129, 236, 255, 0) 100%),
+        linear-gradient(to right, rgba(129, 236, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(129, 236, 255, 0.07) 1px, transparent 1px);
+      background-size: 100% 4px, 32px 32px, 32px 32px;
+      opacity: 0.42;
+    }
+    .scope-visual {
+      height: 132px;
+      margin-bottom: 10px;
+      border: 1px solid var(--ghost-strong);
+      background:
+        linear-gradient(to right, rgba(129, 236, 255, 0.08) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(129, 236, 255, 0.07) 1px, transparent 1px),
+        var(--well);
+      background-size: 20px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .scope-visual::after {
+      content: "";
+      position: absolute;
+      left: -4%;
+      right: -4%;
+      top: 50%;
+      height: 44px;
+      border-top: 2px solid var(--cyan);
+      transform: skewX(-28deg);
+      box-shadow: 0 0 22px rgba(129, 236, 255, 0.3);
+    }
+    .snapshot-preview {
+      display: none;
+      width: 100%;
+      max-height: 160px;
+      margin-top: 10px;
+      border: 1px solid var(--ghost-strong);
+      background: var(--well);
+      object-fit: contain;
+    }
+    .message {
+      max-height: 86px;
+      overflow: auto;
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+    .field {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .jog-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .jog-grid button {
+      min-height: 48px;
+      padding: 0 8px;
+    }
+    .jog-grid .spacer {
+      min-height: 48px;
+      border: 1px dashed rgba(179, 202, 192, 0.14);
+      background: rgba(0, 0, 0, 0.2);
+    }
+    .outlet-bank {
+      display: grid;
+      gap: 8px;
+    }
+    .outlet-row {
+      display: grid;
+      grid-template-columns: 46px 72px repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      align-items: center;
+    }
+    .outlet-id {
+      display: grid;
+      place-items: center;
+      min-height: 38px;
+      background: var(--well);
+      border: 1px solid var(--ghost);
+      color: var(--amber);
+      font-weight: 900;
+    }
+    .outlet-state {
+      display: grid;
+      place-items: center;
+      min-height: 38px;
+      background: var(--well);
+      border: 1px solid var(--ghost);
+      color: var(--dim);
+      font-size: 11px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+    .outlet-state.on {
+      border-color: rgba(87, 242, 135, 0.45);
+      color: var(--green);
+      background: var(--green-bg);
+    }
+    .outlet-state.off {
+      border-color: var(--ghost);
+      color: var(--muted);
+    }
+    .outlet-row button {
+      min-height: 38px;
+      padding: 0 8px;
+      font-size: 12px;
+    }
+    .probe-review { grid-column: span 12; }
+    .probe-layout {
+      display: grid;
+      grid-template-columns: minmax(260px, 360px) 1fr;
+      gap: 12px;
+    }
+    .probe-list {
+      display: grid;
+      gap: 8px;
+      align-content: start;
+      max-height: 520px;
+      overflow: auto;
+    }
+    .probe-item {
+      width: 100%;
+      min-height: auto;
+      display: grid;
+      justify-items: start;
+      gap: 4px;
+      padding: 10px;
+      text-align: left;
+      white-space: normal;
+      color: var(--text);
+      border-color: var(--ghost);
+    }
+    .probe-item.active {
+      border-color: var(--cyan);
+      background: rgba(0, 227, 253, 0.1);
+    }
+    .probe-item strong,
+    .probe-item span { overflow-wrap: anywhere; }
+    .probe-detail {
+      display: grid;
+      gap: 10px;
+      min-width: 0;
+    }
+    .probe-warning {
+      border: 1px solid rgba(254, 170, 0, 0.36);
+      background: rgba(254, 170, 0, 0.08);
+      color: var(--amber);
+      padding: 9px 10px;
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .probe-image {
+      width: 100%;
+      max-height: 420px;
+      object-fit: contain;
+      display: none;
+      background: var(--well);
+      border: 1px solid var(--ghost-strong);
+    }
+    .probe-plan {
+      min-height: 160px;
+      max-height: 260px;
+    }
+    .probe-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .map-panel { grid-column: span 12; }
+    .map-layout {
+      display: grid;
+      gap: 12px;
+      align-items: start;
+    }
+    .map-image-wrap {
+      min-width: 0;
+      background: var(--well);
+      border: 1px solid var(--ghost-strong);
+      padding: 10px;
+    }
+    .map-image {
+      display: block;
+      width: 100%;
+      max-height: 72vh;
+      object-fit: contain;
+      background: var(--well);
+    }
+    .map-list {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .map-card {
+      display: grid;
+      gap: 5px;
+      padding: 10px;
+      background: var(--well);
+      border: 1px solid var(--ghost);
+    }
+    .map-card strong {
+      color: var(--text);
+      overflow-wrap: anywhere;
+    }
+    .map-card span {
+      color: var(--muted);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+    .map-card .mono {
+      color: var(--cyan);
+      font-size: 11px;
+    }
+    pre {
+      min-height: 260px;
+      max-height: 420px;
+      overflow: auto;
+      margin: 0;
+      padding: 12px;
+      border: 1px solid var(--ghost-strong);
+      border-radius: 0;
+      background: var(--well);
+      color: #d9f0e4;
+      font-size: 12px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+    @media (max-width: 1180px) {
+      .safety,
+      .workflow,
+      .microscope,
+      .log-panel,
+      .side-stack,
+      .control-row { grid-column: span 12; }
+      .side-stack { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .calibration-panel,
+      .scope-panel,
+      .outlet-panel { grid-column: span 1; }
+      .control-row { grid-template-columns: 1fr; }
+      .probe-layout { grid-template-columns: 1fr; }
+      .map-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .viewport { height: auto; }
+    }
+    @media (max-width: 680px) {
+      .topbar {
+        position: static;
+        align-items: flex-start;
+        flex-direction: column;
+      }
+      .brand { display: grid; gap: 4px; }
+      h1 { font-size: 22px; }
+      .status-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      main { padding: 12px; gap: 10px; }
+      section { padding: 12px; }
+      .side-stack { grid-template-columns: 1fr; }
+      .side-stack section,
+      .scope-panel,
+      .outlet-panel,
+      .cnc-panel { grid-column: span 1 !important; }
+      .actions button,
+      .button-row button { flex: 1 1 100%; }
+      .metric {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .metric strong { text-align: left; }
+      .viewport,
+      .stream,
+      #stream-placeholder { min-height: 220px; }
+      .outlet-row {
+        grid-template-columns: 36px 1fr;
+      }
+      .outlet-state { min-height: 42px; }
+      .outlet-row button { min-height: 42px; }
+      .map-image { max-height: none; }
+      .map-list { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <h1>Autoprober</h1>
+      <p class="subtitle">The Hacker's Flying Probe by GainSec</p>
+    </div>
+    <div class="top-cluster mono">
+      <div class="top-state" id="hardware-stack-cell"><span class="lamp"></span><span>HARDWARE STACK</span><span id="hardware-stack-state">checking</span></div>
+      <div class="top-state" id="review-probe-cell"><span>REVIEW PROBE</span><span id="review-probe-state">checking</span></div>
+      <div class="top-state"><span>RUN</span><span id="run-state">idle</span></div>
+      <div class="top-state"><span>KILL</span><span id="kill-state">checking</span></div>
+    </div>
+  </header>
+
+  <div class="status-strip mono">
+    <div class="status-cell"><span>Dashboard</span><strong id="top-dash-state">checking</strong></div>
+    <div class="status-cell"><span>Microscope</span><strong id="top-stream-state">checking</strong><small id="top-stream-detail">not checked</small></div>
+    <div class="status-cell"><span>Safety / C4</span><strong id="top-safety-state">checking</strong></div>
+    <div class="status-cell"><span>Calibration</span><strong id="top-calibration-state">checking</strong><small id="top-calibration-detail">not checked</small></div>
+    <div class="status-cell"><span>Scope</span><strong id="top-scope-state">unknown</strong><small id="top-scope-detail">not checked</small></div>
+    <div class="status-cell"><span>Power</span><strong id="top-outlet-state">unknown</strong><small id="top-outlet-detail">not checked</small></div>
+  </div>
+
+  <div class="tab-row mono">
+    <button class="active" data-dashboard-tab="control">Control</button>
+    <button data-dashboard-tab="map">Map</button>
+  </div>
+
+  <main>
+    <div id="stop-banner" class="stop-banner mono" data-tab-panel="control">STOP: motion controls are blocked until Channel 4 is clear. No recovery motion is allowed from the dashboard.</div>
+
+    <section class="log-panel" data-tab-panel="control">
+      <div class="module-head">
+        <div>
+          <h2>Live Log</h2>
+          <p class="device-code mono">runtime log</p>
+        </div>
+        <div class="kill-actions">
+          <button class="danger" id="kill">KILL PYTHON</button>
+          <button class="secondary" id="clear-kill">Clear Kill Latch</button>
+          <button class="secondary" id="clear-log">Clear Log</button>
+          <a class="button secondary" id="download-logs" href="/api/log/download" download>Download Logs</a>
+        </div>
+      </div>
+      <div class="filter-row">
+        <button class="active" data-log-filter="all">All</button>
+        <button data-log-filter="cnc">CNC</button>
+        <button data-log-filter="scope">Scope</button>
+        <button data-log-filter="microscope">Microscope</button>
+        <button data-log-filter="dashboard">Dashboard</button>
+        <button data-log-filter="endstop-mon">Endstop</button>
+      </div>
+      <pre id="log">Waiting for log data...</pre>
+      <div class="safety status-cell">
+        <span>Safety State / Channel 4</span>
+        <strong id="safety-summary">checking</strong>
+        <div id="safety" class="safety-detail mono">Reading Channel 4...</div>
+      </div>
+    </section>
+
+    <section class="microscope" data-tab-panel="control">
+      <div class="module-head">
+        <div>
+          <h2>Microscope</h2>
+          <p class="device-code mono">OPTIC FEED // 1600x1200</p>
+        </div>
+        <div class="button-row">
+          <button class="primary" data-post="/api/microscope/start" data-target="microscope-message">Start Stream</button>
+          <button class="secondary" data-post="/api/microscope/stop" data-target="microscope-message">Stop Stream</button>
+          <button class="secondary" id="snapshot">Snapshot</button>
+        </div>
+      </div>
+      <div class="viewport">
+        <div id="stream-placeholder" class="status stop mono">Microscope stream inactive</div>
+        <img id="microscope-stream" class="stream" data-stream-src="/api/microscope/stream" alt="Microscope stream">
+      </div>
+      <p id="microscope-message" class="message">Stream view.</p>
+      <img id="snapshot-preview" class="snapshot-preview" alt="Latest snapshot preview">
+    </section>
+
+    <div class="side-stack" data-tab-panel="control">
+      <section class="calibration-panel">
+        <div class="module-head">
+          <div>
+            <h2>Calibration</h2>
+            <p class="device-code mono">FOV CACHE</p>
+          </div>
+        </div>
+        <div class="telemetry">
+          <div class="metric"><span>Calibration file</span><strong id="calibration-state">checking</strong></div>
+          <div class="metric"><span>Updated</span><strong id="calibration-updated">unknown</strong></div>
+          <div class="metric"><span>FOV X</span><strong id="calibration-x">unknown</strong></div>
+          <div class="metric"><span>FOV Y</span><strong id="calibration-y">unknown</strong></div>
+        </div>
+        <div class="actions" style="margin-top: 10px;">
+          <button class="secondary" id="refresh-calibration">Refresh Calibration</button>
+        </div>
+      </section>
+
+      <section class="scope-panel">
+        <div class="module-head">
+          <div>
+            <h2>Scope</h2>
+            <p class="device-code mono">SIGLENT SCPI</p>
+          </div>
+          <span class="tag mono">C1 / C4</span>
+        </div>
+        <div class="scope-visual"></div>
+        <div class="telemetry">
+          <div class="metric"><span>Channel 1</span><strong id="scope-c1">unknown</strong></div>
+          <div class="metric"><span>Channel 2</span><strong id="scope-c2">unused</strong></div>
+          <div class="metric"><span>Channel 3</span><strong id="scope-c3">unused</strong></div>
+          <div class="metric"><span>Channel 4</span><strong id="scope-c4">unknown</strong></div>
+        </div>
+        <div class="actions" style="margin-top: 10px;">
+          <button class="primary" data-post="/api/scope/test" data-target="scope-message">Test Scope</button>
+        </div>
+        <p id="scope-message" class="message">Ready.</p>
+      </section>
+
+      <section class="outlet-panel">
+        <div class="module-head">
+          <div>
+            <h2>Power Outlets</h2>
+            <p class="device-code mono">MATTER RELAY ARRAY</p>
+          </div>
+        </div>
+        <div class="outlet-bank">
+          <div class="outlet-row">
+            <div class="outlet-id mono">1</div>
+            <div class="outlet-state mono" id="outlet-1-state">unknown</div>
+            <button data-outlet="1" data-action-name="on">On</button>
+            <button data-outlet="1" data-action-name="off">Off</button>
+            <button class="primary" data-outlet="1" data-action-name="toggle">Toggle</button>
+          </div>
+          <div class="outlet-row">
+            <div class="outlet-id mono">2</div>
+            <div class="outlet-state mono" id="outlet-2-state">unknown</div>
+            <button data-outlet="2" data-action-name="on">On</button>
+            <button data-outlet="2" data-action-name="off">Off</button>
+            <button class="primary" data-outlet="2" data-action-name="toggle">Toggle</button>
+          </div>
+          <div class="outlet-row">
+            <div class="outlet-id mono">3</div>
+            <div class="outlet-state mono" id="outlet-3-state">unknown</div>
+            <button data-outlet="3" data-action-name="on">On</button>
+            <button data-outlet="3" data-action-name="off">Off</button>
+            <button class="primary" data-outlet="3" data-action-name="toggle">Toggle</button>
+          </div>
+          <div class="outlet-row">
+            <div class="outlet-id mono">4</div>
+            <div class="outlet-state mono" id="outlet-4-state">unknown</div>
+            <button data-outlet="4" data-action-name="on">On</button>
+            <button data-outlet="4" data-action-name="off">Off</button>
+            <button class="primary" data-outlet="4" data-action-name="toggle">Toggle</button>
+          </div>
+          <div class="outlet-row">
+            <div class="outlet-id mono">5</div>
+            <div class="outlet-state mono" id="outlet-5-state">unknown</div>
+            <button data-outlet="5" data-action-name="on">On</button>
+            <button data-outlet="5" data-action-name="off">Off</button>
+            <button class="primary" data-outlet="5" data-action-name="toggle">Toggle</button>
+          </div>
+        </div>
+        <div class="actions" style="margin-top: 10px;">
+          <button class="secondary" id="outlet-state">Read Outlet State</button>
+        </div>
+        <p id="outlet-message" class="message">Ready.</p>
+      </section>
+    </div>
+
+    <div class="control-row" data-tab-panel="control">
+      <section class="workflow">
+        <div class="module-head">
+          <div>
+            <h2>Workflow</h2>
+            <p class="device-code mono">SESSION COMMANDS</p>
+          </div>
+        </div>
+        <div class="actions">
+          <button class="primary" data-workflow="/api/workflow/preflight">Preflight</button>
+          <button class="primary" data-workflow="/api/workflow/home" data-confirm="true">Home</button>
+          <button class="primary" data-workflow="/api/workflow/calibrate" data-confirm="true">Calibrate</button>
+          <button class="secondary" id="refresh">Refresh All</button>
+        </div>
+        <p id="workflow-message" class="message">Ready.</p>
+      </section>
+
+      <section class="cnc-panel">
+        <div class="module-head">
+          <div>
+            <h2>CNC</h2>
+            <p class="device-code mono">GRBL MOTION NODE</p>
+          </div>
+          <button class="primary" data-post="/api/cnc/test" data-target="cnc-message">Test CNC</button>
+        </div>
+        <p id="cnc-message" class="message">Ready.</p>
+        <div class="module-head" style="margin-top: 14px;">
+          <div>
+            <h2>Monitored Jog</h2>
+            <p class="device-code mono">CHANNEL 4 REQUIRED CLEAR</p>
+          </div>
+        </div>
+        <label class="field">Distance mm
+          <input id="jog-distance" type="number" min="-10" max="10" step="0.1" value="1">
+        </label>
+        <div class="telemetry" style="margin-top: 10px;">
+          <div class="metric"><span>State</span><strong id="cnc-state">unknown</strong></div>
+          <div class="metric"><span>MPos X</span><strong id="cnc-x">unknown</strong></div>
+          <div class="metric"><span>MPos Y</span><strong id="cnc-y">unknown</strong></div>
+          <div class="metric"><span>MPos Z</span><strong id="cnc-z">unknown</strong></div>
+          <div class="metric"><span>Limit pins</span><strong id="cnc-pins">unknown</strong></div>
+        </div>
+        <div class="jog-grid">
+          <div class="spacer"></div>
+          <button data-jog-axis="Y" data-jog-sign="1">Y+</button>
+          <div class="spacer"></div>
+          <button data-jog-axis="X" data-jog-sign="-1">X-</button>
+          <button class="primary" id="jog">Jog</button>
+          <button data-jog-axis="X" data-jog-sign="1">X+</button>
+          <button data-jog-axis="Z" data-jog-sign="-1">Z-</button>
+          <button data-jog-axis="Y" data-jog-sign="-1">Y-</button>
+          <button data-jog-axis="Z" data-jog-sign="1">Z+</button>
+        </div>
+        <p id="jog-message" class="message">Motion requires clear Channel 4.</p>
+      </section>
+    </div>
+
+    <section id="probe-review" class="probe-review" data-tab-panel="control">
+      <div class="module-head">
+        <div>
+          <h2>Review Probe Targets</h2>
+          <p class="device-code mono">probe_review // probe_plan.json</p>
+        </div>
+        <div class="actions">
+          <button class="secondary" id="refresh-probe-review">Refresh Review</button>
+          <button class="primary" id="export-probe-plan">Export probe_plan.json</button>
+        </div>
+      </div>
+      <p class="probe-warning">Low-confidence or degraded-coordinate targets are review-only until manually approved.</p>
+      <div class="probe-layout" style="margin-top: 12px;">
+        <div>
+          <h2>Candidate Hits</h2>
+          <div id="probe-candidate-list" class="probe-list" style="margin-top: 10px;">
+            <p class="message">No candidates loaded.</p>
+          </div>
+        </div>
+        <div class="probe-detail">
+          <div class="telemetry">
+            <div class="metric"><span>Name</span><strong id="candidate-name">none selected</strong></div>
+            <div class="metric"><span>Type</span><strong id="candidate-type">unknown</strong></div>
+            <div class="metric"><span>Priority</span><strong id="candidate-priority">unknown</strong></div>
+            <div class="metric"><span>Confidence</span><strong id="candidate-confidence">unknown</strong></div>
+            <div class="metric"><span>Review State</span><strong id="candidate-review-state">unknown</strong></div>
+            <div class="metric"><span>XYZ</span><strong id="candidate-xyz">unknown</strong></div>
+            <div class="metric"><span>Source Frame</span><strong id="candidate-source-frame">unknown</strong></div>
+          </div>
+          <img id="candidate-image" class="probe-image" alt="Circled probe target candidate">
+          <p id="candidate-notes" class="message">Select a candidate to review its notes, chipset lookup, and target reason.</p>
+          <div class="probe-actions">
+            <button data-probe-review-state="approved">Approve</button>
+            <button data-probe-review-state="rejected">Reject</button>
+            <button data-probe-review-state="needs_more_context">Needs More Context</button>
+          </div>
+          <pre id="probe-plan-json" class="probe-plan">probe_plan.json not loaded.</pre>
+          <p id="probe-review-message" class="message">Ready.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="map-tab" class="map-panel" data-tab-panel="map" hidden>
+      <div class="module-head">
+        <div>
+          <h2>Map</h2>
+          <p class="device-code mono">target_map // annotated</p>
+        </div>
+        <div class="actions">
+          <button class="secondary" id="refresh-map">Refresh Map</button>
+          <a class="button secondary" id="map-full-link" href="/api/map/artifact/target-map-annotated.jpg" target="_blank" rel="noopener">Open Full Image</a>
+        </div>
+      </div>
+      <p class="probe-warning" id="map-trust">Review-only map. These labels are not approved probe targets.</p>
+      <div class="telemetry" style="margin: 12px 0;">
+        <div class="metric"><span>Labels</span><strong id="map-label-count">unknown</strong></div>
+        <div class="metric"><span>Bounds</span><strong id="map-bounds">unknown</strong></div>
+        <div class="metric"><span>Z</span><strong id="map-z">unknown</strong></div>
+        <div class="metric"><span>Method</span><strong id="map-method">unknown</strong></div>
+      </div>
+      <div class="map-layout">
+        <div class="map-image-wrap">
+          <img id="map-image" class="map-image" alt="Annotated stitched target map">
+        </div>
+        <div class="map-labels-under">
+          <h2>Labels</h2>
+          <div id="map-label-list" class="map-list" style="margin-top: 10px;">
+            <p class="message">Map labels not loaded.</p>
+          </div>
+        </div>
+      </div>
+      <p id="map-message" class="message">Ready.</p>
+    </section>
+  </main>
+
+  <script>
+    let selectedJog = { axis: 'X', sign: 1 };
+    let safetyClear = false;
+    let killActive = true;
+    let activeLogFilter = 'all';
+    let allLogText = '';
+    let probeCandidates = [];
+    let selectedProbeCandidateId = null;
+    let mapLoaded = false;
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    }
+
+    function setStatusCellState(id, state) {
+      const cell = document.getElementById(id)?.closest('.status-cell');
+      if (!cell) return;
+      cell.classList.remove('good', 'stop');
+      if (state) cell.classList.add(state);
+    }
+
+    function setTopStateState(id, state) {
+      const cell = document.getElementById(id)?.closest('.top-state');
+      if (!cell) return;
+      cell.classList.remove('good', 'stop');
+      if (state) cell.classList.add(state);
+    }
+
+    function statusCellIsGood(id) {
+      return Boolean(document.getElementById(id)?.closest('.status-cell')?.classList.contains('good'));
+    }
+
+    function updateHardwareStackState() {
+      const good = [
+        'top-dash-state',
+        'top-stream-state',
+        'top-safety-state',
+        'top-calibration-state',
+        'top-scope-state',
+        'top-outlet-state',
+      ].every(statusCellIsGood);
+      setText('hardware-stack-state', good ? 'green' : 'check');
+      setTopStateState('hardware-stack-state', good ? 'good' : 'stop');
+    }
+
+    function updateReviewProbeState() {
+      const pending = probeCandidates.filter((candidate) => (
+        !candidate.review_state || ['new', 'needs_more_context'].includes(candidate.review_state)
+      )).length;
+      setText('review-probe-state', pending ? `${pending} review` : 'clear');
+      setTopStateState('review-probe-state', pending ? 'stop' : 'good');
+    }
+
+    function setRunState(value) {
+      setText('run-state', value);
+    }
+
+    function formatMtime(seconds) {
+      if (!seconds) return 'unknown';
+      return new Date(seconds * 1000).toLocaleString();
+    }
+
+    function updateMotionControls() {
+      document.querySelectorAll('button[data-jog-axis], #jog').forEach((button) => {
+        button.disabled = !safetyClear || killActive;
+      });
+      document.getElementById('stop-banner')?.classList.toggle('active', !safetyClear || killActive);
+    }
+
+    function renderLog() {
+      const log = document.getElementById('log');
+      if (!log) return;
+      const lines = (allLogText || '').split('\n');
+      const filtered = activeLogFilter === 'all'
+        ? lines
+        : lines.filter((line) => line.toLowerCase().includes(`[${activeLogFilter.toLowerCase()}]`));
+      log.textContent = filtered.join('\n').trim() || 'No matching log lines.';
+    }
+
+    function setOutletState(endpoint, onOff) {
+      const el = document.getElementById(`outlet-${endpoint}-state`);
+      if (!el) return;
+      el.classList.remove('on', 'off');
+      if (onOff === true) {
+        el.textContent = 'ON';
+        el.classList.add('on');
+      } else if (onOff === false) {
+        el.textContent = 'OFF';
+        el.classList.add('off');
+      } else {
+        el.textContent = 'unknown';
+      }
+    }
+
+    function updateOutletStates(outlets) {
+      Object.entries(outlets || {}).forEach(([endpoint, entry]) => {
+        setOutletState(endpoint, entry.on_off);
+      });
+    }
+
+    function formatSafetySummary(data) {
+      const voltage = typeof data.voltage === 'number' ? ` (${data.voltage.toFixed(2)}V)` : '';
+      if (data.ok) return `clear${voltage}`;
+      if (data.state === 'triggered') return `TRIGGERED${voltage}`;
+      if (data.state === 'fault') return `FAULT${voltage}`;
+      return `STOP${voltage}`;
+    }
+
+    function updateMicroscopeStream(active) {
+      const img = document.getElementById('microscope-stream');
+      const placeholder = document.getElementById('stream-placeholder');
+      if (!img || !placeholder) return;
+      if (active) {
+        if (!img.getAttribute('src')) {
+          img.setAttribute('src', `${img.dataset.streamSrc}?t=${Date.now()}`);
+        }
+        img.style.display = 'block';
+        placeholder.style.display = 'none';
+      } else {
+        img.removeAttribute('src');
+        img.style.display = 'none';
+        placeholder.style.display = 'flex';
+      }
+    }
+
+    async function refreshSafety() {
+      const el = document.getElementById('safety');
+      try {
+        const res = await fetch('/api/safety');
+        const data = await res.json();
+        safetyClear = Boolean(data.ok);
+        el.textContent = data.detail || 'No safety data';
+        document.querySelector('.safety')?.classList.toggle('stop', !data.ok);
+        document.querySelector('.safety')?.classList.toggle('good', data.ok);
+        const summary = formatSafetySummary(data);
+        setText('safety-summary', summary);
+        setText('top-safety-state', summary);
+        setStatusCellState('top-safety-state', data.ok ? 'good' : 'stop');
+        updateHardwareStackState();
+        updateMotionControls();
+      } catch (err) {
+        safetyClear = false;
+        el.textContent = 'Safety data unavailable';
+        document.querySelector('.safety')?.classList.add('stop');
+        document.querySelector('.safety')?.classList.remove('good');
+        setText('safety-summary', 'unavailable');
+        setText('top-safety-state', 'unavailable');
+        setStatusCellState('top-safety-state', 'stop');
+        updateHardwareStackState();
+        updateMotionControls();
+      }
+    }
+    async function refreshStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+        const dashState = data.dashboard ? 'online' : 'offline';
+        const usbState = data.microscope?.usb_accessible ? 'USB OK' : 'USB missing';
+        const streamState = data.mjpg_streamer ? 'stream online' : 'stream offline';
+        setText('top-dash-state', dashState);
+        setStatusCellState('top-dash-state', data.dashboard ? 'good' : 'stop');
+        setText('top-stream-state', usbState);
+        setText('top-stream-detail', `${data.microscope?.video_device ?? '/dev/video0'} / ${streamState}`);
+        setStatusCellState('top-stream-state', data.microscope?.usb_accessible ? 'good' : 'stop');
+        updateMicroscopeStream(Boolean(data.mjpg_streamer));
+        updateHardwareStackState();
+      } catch (err) {
+        setText('top-dash-state', 'unavailable');
+        setStatusCellState('top-dash-state', 'stop');
+        setText('top-stream-state', 'unavailable');
+        setText('top-stream-detail', 'status unavailable');
+        setStatusCellState('top-stream-state', 'stop');
+        updateMicroscopeStream(false);
+        updateHardwareStackState();
+      }
+    }
+    async function refreshKillState() {
+      try {
+        const res = await fetch('/api/kill');
+        const data = await res.json();
+        killActive = Boolean(data.kill_active);
+        setText('kill-state', killActive ? 'latched' : 'clear');
+        updateMotionControls();
+      } catch (err) {
+        killActive = true;
+        setText('kill-state', 'unknown');
+        updateMotionControls();
+      }
+    }
+    async function refreshLog() {
+      try {
+        const res = await fetch('/api/log');
+        allLogText = await res.text() || 'No log lines yet.';
+        renderLog();
+      } catch (err) {
+        allLogText = 'Log unavailable.';
+        renderLog();
+      }
+    }
+    async function postJson(url, payload = {}) {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      return { res, data };
+    }
+    async function logEvent(message) {
+      try {
+        await postJson('/api/dashboard/event', { message });
+        refreshLog();
+      } catch (err) {
+        // Logging must not block controls.
+      }
+    }
+    function messageFrom(data, fallback) {
+      if (data.error) return data.error;
+      if (data.message) return data.message;
+      return fallback;
+    }
+
+    function escapeHtml(value) {
+      return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;',
+      }[char]));
+    }
+
+    function formatCandidateXyz(candidate) {
+      const xyz = candidate?.xyz || {};
+      const x = xyz.x ?? candidate?.x ?? 'unknown';
+      const y = xyz.y ?? candidate?.y ?? 'unknown';
+      const z = xyz.z ?? candidate?.z ?? 'unknown';
+      return `X ${x} / Y ${y} / Z ${z}`;
+    }
+
+    function probeArtifactUrl(path) {
+      if (!path) return '';
+      const text = String(path);
+      const marker = 'probe_review/';
+      const idx = text.indexOf(marker);
+      const relative = idx >= 0 ? text.slice(idx + marker.length) : text.replace(/^\/+/, '');
+      return `/api/probe-review/artifact/${relative}`;
+    }
+
+    function formatMapXyz(label) {
+      const xyz = label?.xyz || {};
+      const x = xyz.x ?? 'unknown';
+      const y = xyz.y ?? 'unknown';
+      const z = xyz.z ?? 'unknown';
+      return `X ${x} / Y ${y} / Z ${z}`;
+    }
+
+    function formatMapBounds(bounds) {
+      if (!bounds?.x || !bounds?.y) return 'unknown';
+      return `X ${bounds.x[0]}..${bounds.x[1]} / Y ${bounds.y[0]}..${bounds.y[1]}`;
+    }
+
+    function mapAssetUrl(url) {
+      if (!url) return '';
+      const sep = url.includes('?') ? '&' : '?';
+      return `${url}${sep}v=${Date.now()}`;
+    }
+
+    function renderMap(data) {
+      const image = document.getElementById('map-image');
+      const fullLink = document.getElementById('map-full-link');
+      const labels = Array.isArray(data.labels) ? data.labels : [];
+      if (image) image.src = mapAssetUrl(data.image_preview_url || data.image_full_url || '');
+      if (fullLink && data.image_full_url) fullLink.href = mapAssetUrl(data.image_full_url);
+      setText('map-trust', data.coordinate_trust || 'Review-only map. These labels are not approved probe targets.');
+      setText('map-label-count', String(data.label_count ?? labels.length));
+      setText('map-bounds', formatMapBounds(data.bounds));
+      setText('map-z', data.z ?? 'unknown');
+      setText('map-method', data.coordinate_method || 'unknown');
+      const list = document.getElementById('map-label-list');
+      if (!list) return;
+      if (!labels.length) {
+        list.innerHTML = '<p class="message">No map labels loaded.</p>';
+        return;
+      }
+      list.innerHTML = labels.map((label) => `
+        <div class="map-card">
+          <strong>${escapeHtml(label.id)}. ${escapeHtml(label.name || 'Unnamed label')}</strong>
+          <span>${escapeHtml(label.kind || label.type || 'unknown')} // ${escapeHtml(label.confidence || 'confidence unknown')}</span>
+          <span>${escapeHtml(label.protocols || 'Protocols not listed')}</span>
+          <span class="mono">${escapeHtml(formatMapXyz(label))}</span>
+        </div>
+      `).join('');
+    }
+
+    async function refreshMap() {
+      const msg = document.getElementById('map-message');
+      try {
+        const res = await fetch('/api/map');
+        const data = await res.json();
+        if (!res.ok || !data.success) throw new Error(data.error || 'map unavailable');
+        renderMap(data);
+        mapLoaded = true;
+        if (msg) msg.textContent = `Loaded ${data.label_count ?? 0} map labels.`;
+      } catch (err) {
+        if (msg) msg.textContent = 'Map unavailable.';
+      }
+    }
+
+    function switchDashboardTab(tab) {
+      document.querySelectorAll('button[data-dashboard-tab]').forEach((button) => {
+        button.classList.toggle('active', button.dataset.dashboardTab === tab);
+      });
+      document.querySelectorAll('[data-tab-panel]').forEach((panel) => {
+        panel.hidden = panel.dataset.tabPanel !== tab;
+      });
+      if (tab === 'map' && !mapLoaded) refreshMap();
+    }
+
+    function selectedProbeCandidate() {
+      return probeCandidates.find((candidate) => candidate.id === selectedProbeCandidateId) || probeCandidates[0] || null;
+    }
+
+    function renderProbeCandidates() {
+      const list = document.getElementById('probe-candidate-list');
+      if (!list) return;
+      if (!probeCandidates.length) {
+        list.innerHTML = '<p class="message">No manual probe candidates yet.</p>';
+        selectProbeCandidate(null);
+        return;
+      }
+      if (!selectedProbeCandidateId) selectedProbeCandidateId = probeCandidates[0].id;
+      list.innerHTML = probeCandidates.map((candidate) => `
+        <button class="probe-item ${candidate.id === selectedProbeCandidateId ? 'active' : ''}" data-probe-candidate="${escapeHtml(candidate.id)}">
+          <strong>${escapeHtml(candidate.name || candidate.id)}</strong>
+          <span class="mono">${escapeHtml(candidate.type || 'unknown')} // ${escapeHtml(candidate.priority || 'unranked')} // ${escapeHtml(candidate.review_state || 'new')}</span>
+          <span>${escapeHtml(formatCandidateXyz(candidate))}</span>
+        </button>
+      `).join('');
+      document.querySelectorAll('button[data-probe-candidate]').forEach((button) => {
+        button.addEventListener('click', () => selectProbeCandidate(button.dataset.probeCandidate));
+      });
+      selectProbeCandidate(selectedProbeCandidateId);
+    }
+
+    function selectProbeCandidate(id) {
+      selectedProbeCandidateId = id;
+      const candidate = selectedProbeCandidate();
+      document.querySelectorAll('button[data-probe-candidate]').forEach((button) => {
+        button.classList.toggle('active', button.dataset.probeCandidate === selectedProbeCandidateId);
+      });
+      setText('candidate-name', candidate?.name || candidate?.id || 'none selected');
+      setText('candidate-type', candidate?.type || 'unknown');
+      setText('candidate-priority', candidate?.priority || 'unknown');
+      setText('candidate-confidence', candidate?.confidence ?? 'unknown');
+      setText('candidate-review-state', candidate?.review_state || 'unknown');
+      setText('candidate-xyz', candidate ? formatCandidateXyz(candidate) : 'unknown');
+      setText('candidate-source-frame', candidate?.source?.frame_path || candidate?.source_frame || 'unknown');
+      const notes = [
+        candidate?.why,
+        candidate?.chipset_notes,
+        candidate?.notes,
+      ].filter(Boolean).join('\n\n');
+      setText('candidate-notes', notes || 'Select a candidate to review its notes, chipset lookup, and target reason.');
+      const image = document.getElementById('candidate-image');
+      const annotated = candidate?.source?.annotated_path || candidate?.annotated_image || candidate?.source?.crop_path;
+      if (image && annotated) {
+        image.src = probeArtifactUrl(annotated);
+        image.style.display = 'block';
+      } else if (image) {
+        image.removeAttribute('src');
+        image.style.display = 'none';
+      }
+    }
+
+    async function refreshProbeReview() {
+      const msg = document.getElementById('probe-review-message');
+      try {
+        const [candidatesRes, planRes] = await Promise.all([
+          fetch('/api/probe-review/candidates'),
+          fetch('/api/probe-review/plan'),
+        ]);
+        const candidatesData = await candidatesRes.json();
+        const planData = await planRes.json();
+        probeCandidates = candidatesData.candidates || [];
+        renderProbeCandidates();
+        updateReviewProbeState();
+        const planEl = document.getElementById('probe-plan-json');
+        if (planEl) planEl.textContent = JSON.stringify(planData.plan || {}, null, 2);
+        if (msg) msg.textContent = `Loaded ${probeCandidates.length} manual candidates.`;
+      } catch (err) {
+        setText('review-probe-state', 'unavailable');
+        setTopStateState('review-probe-state', 'stop');
+        if (msg) msg.textContent = 'Probe review unavailable.';
+      }
+    }
+
+    async function setProbeReviewState(id, reviewState) {
+      const msg = document.getElementById('probe-review-message');
+      if (!id) {
+        if (msg) msg.textContent = 'Select a candidate first.';
+        return;
+      }
+      try {
+        const { res, data } = await postJson(`/api/probe-review/candidates/${id}/review`, { review_state: reviewState });
+        if (!res.ok) throw new Error(data.error || 'review update failed');
+        if (msg) msg.textContent = `${id} marked ${reviewState}.`;
+        await refreshProbeReview();
+      } catch (err) {
+        if (msg) msg.textContent = 'Review state update failed.';
+      }
+    }
+
+    async function exportProbePlan() {
+      const msg = document.getElementById('probe-review-message');
+      try {
+        const { res, data } = await postJson('/api/probe-review/plan/export');
+        if (!res.ok) throw new Error(data.error || 'export failed');
+        const planEl = document.getElementById('probe-plan-json');
+        if (planEl) planEl.textContent = JSON.stringify(data.plan || {}, null, 2);
+        if (msg) msg.textContent = 'probe_plan.json exported with approved targets.';
+      } catch (err) {
+        if (msg) msg.textContent = 'Probe plan export failed.';
+      }
+    }
+
+    async function runWorkflow(button) {
+      const msg = document.getElementById('workflow-message');
+      try {
+        logEvent(`button ${button.textContent.trim()}`);
+        setRunState(button.textContent.trim().toLowerCase());
+        const payload = button.dataset.confirm ? { confirm: true } : {};
+        const { res, data } = await postJson(button.dataset.workflow, payload);
+        msg.textContent = messageFrom(data, res.ok ? 'Complete.' : 'Not accepted.');
+      } catch (err) {
+        msg.textContent = 'Workflow endpoint unavailable.';
+      } finally {
+        setRunState('idle');
+      }
+    }
+    async function refreshCalibration() {
+      try {
+        const res = await fetch('/api/calibration');
+        const data = await res.json();
+        const state = data.exists ? 'present' : (data.operator_checked ? 'checked' : 'missing');
+        setText('calibration-state', state);
+        setText('top-calibration-state', state);
+        setStatusCellState('top-calibration-state', (data.exists || data.operator_checked) ? 'good' : 'stop');
+        const checkedDetail = data.checked?.reason || 'operator confirmed unchanged';
+        const updated = data.mtime ? formatMtime(data.mtime) : (data.checked_mtime ? formatMtime(data.checked_mtime) : 'unknown');
+        setText('calibration-updated', updated);
+        setText('top-calibration-detail', data.exists ? updated : (data.operator_checked ? checkedDetail : 'not checked'));
+        setText('calibration-x', data.calibration?.fov_x_mm ?? 'unknown');
+        setText('calibration-y', data.calibration?.fov_y_mm ?? 'unknown');
+      } catch (err) {
+        setText('calibration-state', 'unavailable');
+        setText('top-calibration-state', 'unavailable');
+        setStatusCellState('top-calibration-state', 'stop');
+        setText('calibration-updated', 'unavailable');
+        setText('top-calibration-detail', 'unavailable');
+      } finally {
+        updateHardwareStackState();
+      }
+    }
+    async function refreshAll() {
+      setRunState('refresh');
+      await Promise.allSettled([
+        refreshSafety(),
+        refreshStatus(),
+        refreshLog(),
+        refreshCalibration(),
+        refreshScopeStatus(),
+        refreshOutletState(),
+        refreshKillState(),
+        refreshProbeReview(),
+        refreshMap(),
+      ]);
+      setRunState('idle');
+    }
+
+    async function refreshScopeStatus() {
+      try {
+        const res = await fetch('/api/scope/status');
+        const data = await res.json();
+        if (!res.ok || !data.reachable) throw new Error(data.error || 'scope unreachable');
+        setText('top-scope-state', 'online');
+        setText('top-scope-detail', data.endpoint || 'configured scope');
+        setStatusCellState('top-scope-state', 'good');
+        updateHardwareStackState();
+      } catch (err) {
+        setText('top-scope-state', 'offline');
+        setText('top-scope-detail', 'configured scope');
+        setStatusCellState('top-scope-state', 'stop');
+        updateHardwareStackState();
+      }
+    }
+
+    async function refreshOutletState() {
+      const msg = document.getElementById('outlet-message');
+      try {
+        const res = await fetch('/api/outlet/state');
+        const data = await res.json();
+        if (!res.ok || !data.outlets) throw new Error(data.error || 'outlet state failed');
+        updateOutletStates(data.outlets);
+        const okCount = Object.values(data.outlets).filter((entry) => entry.success).length;
+        const onCount = Object.values(data.outlets).filter((entry) => entry.on_off === true).length;
+        const total = Object.keys(data.outlets).length;
+        const summary = `${onCount} on / ${okCount}/${total} readable`;
+        setText('top-outlet-state', summary);
+        setText('top-outlet-detail', 'read complete');
+        setStatusCellState('top-outlet-state', okCount ? 'good' : 'stop');
+        updateHardwareStackState();
+        if (msg) msg.textContent = 'Outlet state read complete.';
+      } catch (err) {
+        setText('top-outlet-state', 'unavailable');
+        setText('top-outlet-detail', 'read failed');
+        setStatusCellState('top-outlet-state', 'stop');
+        updateHardwareStackState();
+        if (msg) msg.textContent = 'Outlet state unavailable.';
+      }
+    }
+    document.querySelectorAll('button[data-workflow]').forEach((button) => {
+      button.addEventListener('click', () => runWorkflow(button));
+    });
+    document.querySelectorAll('button[data-post]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const msg = document.getElementById(button.dataset.target);
+        try {
+          logEvent(`button ${button.textContent.trim()}`);
+          setRunState(button.textContent.trim().toLowerCase());
+          const { res, data } = await postJson(button.dataset.post);
+          msg.textContent = messageFrom(data, res.ok ? 'Complete.' : 'Command failed.');
+          if (data.ch1_mean !== undefined) {
+            setText('scope-c1', `${data.ch1_mean}V`);
+            setText('top-scope-state', 'reachable');
+            setText('top-scope-detail', 'manual test complete');
+            setStatusCellState('top-scope-state', 'good');
+            updateHardwareStackState();
+          }
+          if (data.ch4_mean !== undefined) setText('scope-c4', `${data.ch4_mean}V`);
+          if (data.status) {
+            const mpos = data.status.mpos || [];
+            setText('cnc-state', data.status.state ?? 'unknown');
+            setText('cnc-x', mpos[0] ?? 'unknown');
+            setText('cnc-y', mpos[1] ?? 'unknown');
+            setText('cnc-z', mpos[2] ?? 'unknown');
+            setText('cnc-pins', data.status.pins?.length ? data.status.pins.join(', ') : 'none');
+          }
+          setText('scope-c2', 'unused');
+          setText('scope-c3', 'unused');
+          refreshStatus();
+        } catch (err) {
+          msg.textContent = 'Endpoint unavailable.';
+          if (button.dataset.post === '/api/scope/test') {
+            setText('top-scope-state', 'unreachable');
+            setText('top-scope-detail', 'test failed');
+            setStatusCellState('top-scope-state', 'stop');
+          }
+        } finally {
+          setRunState('idle');
+        }
+      });
+    });
+    document.querySelectorAll('button[data-jog-axis]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        logEvent(`button jog ${button.dataset.jogAxis}${button.dataset.jogSign}`);
+        selectedJog = {
+          axis: button.dataset.jogAxis,
+          sign: Number(button.dataset.jogSign),
+        };
+        await runJog();
+      });
+    });
+    document.getElementById('snapshot').addEventListener('click', async () => {
+      const msg = document.getElementById('microscope-message');
+      try {
+        logEvent('button Snapshot');
+        setRunState('snapshot');
+        const res = await fetch('/api/microscope/snapshot');
+        if (!res.ok) throw new Error(`snapshot failed (${res.status})`);
+        const blob = await res.blob();
+        const preview = document.getElementById('snapshot-preview');
+        if (preview.dataset.objectUrl) URL.revokeObjectURL(preview.dataset.objectUrl);
+        const url = URL.createObjectURL(blob);
+        preview.dataset.objectUrl = url;
+        preview.src = url;
+        preview.style.display = 'block';
+        msg.textContent = 'Latest snapshot captured.';
+      } catch (err) {
+        msg.textContent = 'Snapshot unavailable.';
+      } finally {
+        setRunState('idle');
+      }
+    });
+    document.getElementById('download-logs').addEventListener('click', () => {
+      logEvent('button Download Logs');
+    });
+    document.getElementById('refresh-calibration').addEventListener('click', () => {
+      logEvent('button Refresh Calibration');
+      refreshCalibration();
+    });
+    document.getElementById('jog').addEventListener('click', () => {
+      logEvent('button Jog');
+      runJog();
+    });
+
+    async function runJog() {
+      const msg = document.getElementById('jog-message');
+      try {
+        if (!safetyClear) {
+          msg.textContent = 'Jog blocked: Channel 4 is not clear.';
+          return;
+        }
+        setRunState('jog');
+        const distance = Number(document.getElementById('jog-distance').value) * selectedJog.sign;
+        const payload = { axis: selectedJog.axis, distance };
+        const { res, data } = await postJson('/api/cnc/jog', payload);
+        msg.textContent = messageFrom(data, res.ok ? `Jog ${selectedJog.axis} complete.` : 'Jog stopped.');
+        refreshSafety();
+      } catch (err) {
+        msg.textContent = 'Jog endpoint unavailable.';
+      } finally {
+        setRunState('idle');
+      }
+    }
+
+    document.querySelectorAll('button[data-outlet]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const msg = document.getElementById('outlet-message');
+        try {
+          logEvent(`button outlet ${button.dataset.outlet} ${button.dataset.actionName}`);
+          setRunState(`outlet ${button.dataset.outlet}`);
+          const endpoint = button.dataset.outlet;
+          const action = button.dataset.actionName;
+          const { res, data } = await postJson(`/api/outlet/${endpoint}`, { action });
+          msg.textContent = messageFrom(data, res.ok ? `Outlet ${endpoint} ${action} sent.` : 'Outlet command failed.');
+          if (res.ok) {
+            setText('top-outlet-state', 'command sent');
+            if (action === 'on') setOutletState(endpoint, true);
+            if (action === 'off') setOutletState(endpoint, false);
+            if (action === 'toggle') setOutletState(endpoint, null);
+          }
+        } catch (err) {
+          msg.textContent = 'Outlet endpoint unavailable.';
+          setText('top-outlet-state', 'unavailable');
+        } finally {
+          setRunState('idle');
+        }
+      });
+    });
+    document.getElementById('outlet-state').addEventListener('click', async () => {
+      logEvent('button Read Outlet State');
+      setRunState('outlet read');
+      await refreshOutletState();
+      setRunState('idle');
+    });
+    document.getElementById('clear-log').addEventListener('click', async () => {
+      await postJson('/api/log/clear');
+      refreshLog();
+    });
+    document.getElementById('kill').addEventListener('click', async () => {
+      setRunState('kill');
+      await postJson('/api/kill', { reason: 'dashboard KILL PYTHON button' });
+      await refreshKillState();
+      await refreshLog();
+      setRunState('idle');
+    });
+    document.getElementById('clear-kill').addEventListener('click', async () => {
+      logEvent('button Clear Kill Latch');
+      await postJson('/api/kill/clear');
+      await refreshKillState();
+      await refreshLog();
+    });
+    document.getElementById('refresh').addEventListener('click', () => {
+      logEvent('button Refresh All');
+      refreshAll();
+    });
+    document.getElementById('refresh-probe-review').addEventListener('click', () => {
+      logEvent('button Refresh Probe Review');
+      refreshProbeReview();
+    });
+    document.getElementById('export-probe-plan').addEventListener('click', () => {
+      logEvent('button Export Probe Plan');
+      exportProbePlan();
+    });
+    document.getElementById('refresh-map').addEventListener('click', () => {
+      logEvent('button Refresh Map');
+      refreshMap();
+    });
+    document.querySelectorAll('button[data-dashboard-tab]').forEach((button) => {
+      button.addEventListener('click', () => {
+        logEvent(`button tab ${button.dataset.dashboardTab}`);
+        switchDashboardTab(button.dataset.dashboardTab);
+      });
+    });
+    document.querySelectorAll('button[data-probe-review-state]').forEach((button) => {
+      button.addEventListener('click', () => {
+        logEvent(`button probe review ${button.dataset.probeReviewState}`);
+        setProbeReviewState(selectedProbeCandidateId, button.dataset.probeReviewState);
+      });
+    });
+    document.querySelectorAll('button[data-log-filter]').forEach((button) => {
+      button.addEventListener('click', () => {
+        logEvent(`button log filter ${button.dataset.logFilter}`);
+        activeLogFilter = button.dataset.logFilter;
+        document.querySelectorAll('button[data-log-filter]').forEach((candidate) => {
+          candidate.classList.toggle('active', candidate === button);
+        });
+        renderLog();
+      });
+    });
+    updateMotionControls();
+    updateReviewProbeState();
+    updateHardwareStackState();
+    refreshAll();
+    refreshKillState();
+    setInterval(refreshSafety, 2000);
+    setInterval(refreshStatus, 5000);
+    setInterval(refreshLog, 2500);
+    setInterval(refreshKillState, 5000);
+  </script>
+</body>
+</html>

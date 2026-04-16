@@ -1,0 +1,9 @@
+[project]
+name = "autoprober-v2"
+version = "0.1.0"
+description = "Safety-first CNC microscope autoprober control suite"
+requires-python = ">=3.8"
+dependencies = [
+  "flask",
+  "pyserial",
+]
